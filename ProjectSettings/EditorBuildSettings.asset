@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Resources/scenes/DEBUG_0_TITLE.unity
+    guid: b126890ceadf0d946af667060121f861
+  - enabled: 1
+    path: Assets/Resources/scenes/DEBUG_1_GAMEPLAY.unity
+    guid: 00000000000000000000000000000000
+  - enabled: 1
+    path: Assets/Resources/scenes/DEBUG_2_BEDROOM.unity
+    guid: 7a361e688268a164ab90202ead0524fd
