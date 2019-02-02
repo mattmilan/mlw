@@ -44,18 +44,32 @@ public class UIScript : MonoBehaviour {
         current_recipe_ingredient_index,
         current_recipe_index;
     Coroutine action_taken;
-    public bool easymode = true;
+    public bool easymode = false;
     /* END GAME OBJECTS*/
 
 
     //NEW SCRIPTS
     private void Awake()
     {
+        
+        StartCoroutine(Test());
         if (GameObject.FindGameObjectsWithTag("GameController").Length > 1) Destroy(gameObject);            
         DontDestroyOnLoad(gameObject);       
+        //OnSceneLoaded is a method defined later on in this file
         SceneManager.sceneLoaded += OnSceneLoaded;
 
     }
+    IEnumerator Test()
+    {
+        string url = "http://mattmilan.com:3000/api/v1/spellbooks.json";
+        using (WWW www = new WWW(url))
+        {
+            yield return www;
+
+            Debug.Log("Test: " + www.text);
+        }
+    }
+
     void CreateStage()
     {
         LoadContainers();
@@ -85,13 +99,17 @@ public class UIScript : MonoBehaviour {
     }
     void LoadContainers()
     {
-        if (containers != null) return;
-        containers = new List<GameObject>();
-        GameObject[] find_containers = GameObject.FindGameObjectsWithTag("INGREDIENT_CONTAINER");
+        if (_containers.Count > 0) return;
+        _containers = new List<Container>();
+        foreach (GameObject g in containers)
+        {
+            _containers.Add(g.GetComponent<Container>());
+        }
+        /*GameObject[] find_containers = GameObject.FindGameObjectsWithTag("INGREDIENT_CONTAINER");
         foreach (GameObject g in find_containers)
         {
-            containers.Add(g);
-        }
+            containers.Add(g);            
+        }*/
     }
     void LoadRecipes()
     {
@@ -137,16 +155,43 @@ public class UIScript : MonoBehaviour {
    
     void PlaceIngredientsInContainers(int howMany)
     {
-        
-        int[] unique_ingredients = ShuffledUniqueIntegerArray(howMany);
-        int[] unique_containers = ShuffledUniqueIntegerArray(howMany) ;
+        // Ings: A copy of the _ingredients list
+        // Conts: A copy of the _containers list
+
+        // We make copies because we're going to remove these
+        // objects from the lists each time we iterate
+        // This ensures unique ingredient placement among
+        // the containers
+
+        List<Ingredient> ings = new List<Ingredient>(_ingredients);
+        List<Container> conts = new List<Container>(_containers);
+
+        Debug.Log(ings.Count);
+        Debug.Log(conts.Count);
+
         for (int i = 0; i < howMany; i++)
         {
-            Ingredient newIngredient = Instantiate(_ingredients[unique_ingredients[i]]);
-            newIngredient.transform.SetParent(containers[unique_containers[i]].transform);
-            newIngredient.transform.localPosition = Vector3.zero;
-            newIngredient.transform.localScale = Vector3.one * 75;
-            if (easymode == false) newIngredient.GetComponent<RawImage>().color = Color.clear;
+            // Choose an ingredient randomly then remove it from the list            
+            // Minus 1 to offset the list index
+            int ingredientIndex = Random.Range(0, ings.Count - 1);
+            Ingredient ingredient = Instantiate(ings[ingredientIndex]);//Instantiate(_ingredients[unique_ingredients[i]]);
+            ings.RemoveAt(ingredientIndex);
+
+            // Choose a container randomly and remove it from the list
+            // Minus 1 to offset the list index
+            int containerIndex = Random.Range(0, conts.Count - 1);
+            Container container = conts[containerIndex];
+            conts.RemoveAt(containerIndex);
+
+            // Put the ingrdient in the container
+            container.SetIngredient(ingredient);
+            ingredient.transform.SetParent(container.transform);
+            
+            ingredient.transform.localPosition = Vector3.zero;
+            ingredient.transform.localScale = Vector3.one * 75;
+
+            // Add option for training/easy/debug mode
+            //if (easymode == false) ingredient.GetComponent<RawImage>().color = Color.clear;
         }
     }
     void PlaceRecipeInPanel()
@@ -185,14 +230,19 @@ public class UIScript : MonoBehaviour {
     //Button Behaviour Scripts
     //1. change container button to show ingredient for 2 seconds
     //2. 
-    public void CheckContainer(Button b)
+    //public void CheckContainer(Button b)
+    //{
+    //    //on click, fade in the ingredient, and lock out buttons for ~2 seconds     
+    //    /if (action_taken != null) return;
+    //    b.GetComponentInChildren<RawImage>().color = Color.white;
+    //    action_taken = StartCoroutine(ButtonCheck(b));
+        
+        
+    //}
+    public void CheckContainer(Container c)
     {
-        //on click, fade in the ingredient, and lock out buttons for ~2 seconds        
         if (action_taken != null) return;
-        b.GetComponentInChildren<RawImage>().color = Color.white;
-        action_taken = StartCoroutine(ButtonCheck(b));
-        
-        
+        action_taken = StartCoroutine(ButtonCheck(c));
     }
     void AddTurn()
     {
@@ -211,7 +261,44 @@ public class UIScript : MonoBehaviour {
         streak_text.text = streak_counter.ToString();
         streak_slider.value = streak_counter;
     }
-    
+    IEnumerator ButtonCheck(Container c)
+    {
+        AddTurn();
+        //b.GetComponentInChildren<RawImage>().color = Color.white;
+        Ingredient button_ingredient = c.ingredient;
+
+        /* Fixed-Order recipe completion */
+        if (Match(button_ingredient, CurrentRecipeIngredient()))
+        {
+            CompleteIngredient(CurrentRecipeIngredient());
+            if (IsRecipeComplete()) NextRecipe();
+        }
+        else ReduceStreak();
+
+        /* Any-Order recipe completion */
+        /*foreach (Ingredient i in current_ingredients)
+        {
+            if (!i.gameObject.activeSelf) { continue; } // skip completed ingredients    
+            if (Match(button_ingredient, i)) {
+                CompleteIngredient(button_ingredient);
+                if (IsRecipeComplete()) NextRecipe();
+                return;
+            }
+            else ReduceStreak();
+        }
+        */
+
+
+        float elapsed_time = 0f;
+        float duration = (easymode ? .5f : 2f);
+        while (elapsed_time < duration)
+        {
+            elapsed_time += Time.deltaTime;
+            yield return null;
+        }
+        if (easymode == false) c.myButton.image.color = Color.clear;
+        action_taken = null;
+    }
     IEnumerator ButtonCheck(Button b)
     {
         AddTurn();

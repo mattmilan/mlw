@@ -11,21 +11,21 @@ public class Cauldron : MonoBehaviour {
      * 
      * <variables> </variables>
      */
-    public List<GameObject> ingredients;
-    void OnMouseDown()
-    {
-        Familiar f = GameController.familiar;
-        if (f.ingredient != null && !f.Busy())
-        {            
-            f.Deliver(this);
-        }
-        GameController.AddTurn();
-    }
-    public void Deliver(GameObject ingredient)
-    {
-        if (ingredient == null) return;
-        GameController.CheckRecipe(ingredient);
-        Destroy(ingredient);
-    }
+    //public List<GameObject> ingredients;
+    //void OnMouseDown()
+    //{
+    //    Familiar f = GameController.familiar;
+    //    if (f.ingredient != null && !f.Busy())
+    //    {            
+    //        f.Deliver(this);
+    //    }
+    //    GameController.AddTurn();
+    //}
+    //public void Deliver(GameObject ingredient)
+    //{
+    //    if (ingredient == null) return;
+    //    GameController.CheckRecipe(ingredient);
+    //    Destroy(ingredient);
+    //}
 
 }
